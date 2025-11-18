@@ -30,7 +30,35 @@
         }
     </style>
     
-        
+    <!-- 🔑 암호 체크를 위한 JavaScript 추가 (주석 처리됨) -->
+    <!--
+    <script>
+        const CORRECT_PASSWORD = "quiz1234";
+
+        function checkPassword() {
+            document.body.style.display = 'none';
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+
+            if (isLoggedIn === 'true') {
+                document.body.style.display = 'flex';
+                return; 
+            }
+
+            let enteredPassword = prompt("페이지에 접속하려면 암호 (quiz1234)를 입력하세요:");
+
+            if (enteredPassword === CORRECT_PASSWORD) {
+                sessionStorage.setItem('isLoggedIn', 'true');
+                document.body.style.display = 'flex';
+                alert("로그인 성공! 퀴즈 센터에 오신 것을 환영합니다.");
+            } else {
+                alert("암호가 틀렸거나 입력이 취소되었습니다. 페이지에 접속할 수 없습니다.");
+                window.location.href = "about:blank"; 
+            }
+        }
+        window.onload = checkPassword;
+    </script>
+    -->
+    
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
 
@@ -46,14 +74,27 @@
         <section class="space-y-4">
             <!-- Border 색상 변경 (primary-blue -> main-purple) -->
             <h2 class="text-xl font-bold border-l-4 border-main-purple pl-3">
-                현재 제공 퀴즈 목록 (1개)
+                현재 제공 퀴즈 목록 (2개)
             </h2>
             
-            <!-- 퀴즈 항목 1: 문장의 성분 (새로운 시작) -->
+            <!-- 퀴즈 항목 1: 문장의 성분 -->
             <a href="sentence-elements-quiz-02.html" class="block">
                 <div class="p-4 bg-gray-50 rounded-lg border border-gray-200 transition duration-300 hover:shadow-md hover:border-main-purple flex items-center justify-between">
                     <div>
                         <p class="text-base font-semibold">1. 문장의 성분 (주어/동사/보어/목적어) 10제</p>
+                        </div>
+                    <!-- SVG 색상 변경 (text-primary-blue -> text-main-purple) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-main-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </div>
+            </a>
+            
+            <!-- 퀴즈 항목 2: 8품사 맛보기 (새로 추가) -->
+            <a href="parts-of-speech-quiz.html" class="block">
+                <div class="p-4 bg-gray-50 rounded-lg border border-gray-200 transition duration-300 hover:shadow-md hover:border-main-purple flex items-center justify-between">
+                    <div>
+                        <p class="text-base font-semibold">2. 8품사 맛보기 (명사/동사/형용사/부사) 10제</p>
                         </div>
                     <!-- SVG 색상 변경 (text-primary-blue -> text-main-purple) -->
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-main-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">

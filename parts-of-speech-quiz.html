@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2. 8품사 맛보기 퀴즈</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        // 새로운 라벤더 퍼플(Lavender Purple) 색상 정의
+                        'main-purple': '#8B5CF6', // Purple-500
+                        'correct-green': '#059669', // Emerald-600
+                        'wrong-red': '#DC2626', // Red-600
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 기본 폰트 설정 및 배경 */
+        body {
+            background-color: #E5E7EB; /* Light gray background */
+            font-family: 'Inter', sans-serif;
+            color: #1F2937; /* Gray-800 */
+        }
+
+        /* 퀴즈 컨테이너 */
+        #quiz-container {
+            border: 1px solid #D1D5DB; /* Gray-300 border */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 질문 번호 스타일 */
+        .question-number {
+            display: inline-block;
+            background-color: #F3F4F6; /* Gray-100 */
+            color: #4B5563; /* Gray-600 */
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px; /* Full rounded */
+            font-weight: 600;
+        }
+
+        /* 질문 텍스트 스타일 */
+        .question-text {
+            font-size: 1.125rem; /* text-xl */
+            font-weight: 700;
+            margin-bottom: 1rem;
+            padding: 0.5rem 0; 
+        }
+
+        /* 옵션 리스트 스타일 */
+        .options-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        /* 개별 옵션 버튼 스타일 */
+        .option-button {
+            width: 100%;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border: 1px solid #D1D5DB;
+            border-radius: 0.375rem; /* rounded-md */
+            background-color: white;
+            transition: all 0.2s;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .option-button:hover:not(:disabled) {
+            background-color: #F3F4F6; /* Gray-100 on hover */
+        }
+        
+        /* 피드백 메시지 스타일 */
+        .feedback-message {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem; /* text-sm */
+            line-height: 1.5;
+        }
+        .feedback-correct {
+            background-color: #ECFDF5; /* Green-50 */
+            color: #065F46;
+        }
+        .feedback-wrong {
+            background-color: #FEF2F2; /* Red-50 */
+            color: #991B1B;
+        }
+
+        .correct-answer-highlight {
+            font-weight: bold;
+            color: #059669; /* Correct-green */
+        }
+        
+        /* 인쇄 시 스타일 */
+        @media print {
+            body { background-color: white !important; color: black !important; margin: 0; }
+            #quiz-container { border: none !important; box-shadow: none !important; width: 100% !important; max-width: none !important; padding: 0 !important; }
+            #question-area, #confirm-modal, #next-button, #counter, .option-button, .question-number, .options-list, footer, header button { display: none !important; }
+            #results-area { display: block !important; padding: 20px; border: none; }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            .review-item { border-bottom: 1px solid #e5e7eb; padding-bottom: 15px; margin-bottom: 15px; }
+        }
+        .print-only { display: none; }
+
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <!-- Quiz Container - 클래식 디자인 적용 -->
+    <div id="quiz-container" class="w-full max-w-2xl bg-white rounded-xl p-6 sm:p-8 space-y-6">
+        
+        <!-- HEADER: Home 버튼과 제목을 포함하는 영역 -->
+        <header class="flex items-center justify-center mb-6 border-b pb-3 relative no-print pl-16">
+            <!-- Home Button: 왼쪽 상단 고정 -->
+            <button onclick="showConfirmModal()" class="absolute left-0 top-1 px-3 py-1 bg-main-purple text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition duration-300">
+                🏠 Home
+            </button>
+            <h1 id="quiz-title" class="text-xl font-bold text-center">8품사 맛보기</h1>
+        </header>
+
+        <!-- Question Area -->
+        <div id="question-area" class="space-y-4 pt-4"> 
+            
+            <div class="flex items-center justify-between mb-4">
+                <span id="question-number-display" class="question-number"></span>
+                <div id="counter" class="text-gray-500 font-medium text-base"></div>
+            </div>
+            
+            <p id="question-text" class="question-text">질문을 로드하는 중...</p>
+            
+            <ul id="options-container" class="options-list">
+                <!-- Options will be rendered here -->
+            </ul>
+
+            <div id="feedback-area" class="feedback-message hidden">
+                <p id="rationale-text"></p>
+            </div>
+            
+            <button id="next-button" class="w-full py-3 bg-main-purple text-white font-bold rounded-lg hover:bg-purple-700 transition duration-300 hidden mt-8" onclick="nextQuestion()">
+                다음 문제
+            </button>
+        </div>
+
+        <!-- Results Area -->
+        <div id="results-area" class="hidden space-y-6 pt-4">
+            <div class="text-center space-y-2">
+                <h2 class="text-3xl font-extrabold text-gray-800">퀴즈 완료!</h2>
+                <p class="text-6xl font-extrabold text-main-purple" id="final-score">0 / 10</p>
+                <p class="text-lg text-gray-600" id="result-message">수고하셨습니다. 다시 한번 도전해 보세요!</p>
+            </div>
+            
+            <!-- Button Group: Home, 다시 시작, 인쇄 버튼 -->
+            <div class="flex flex-col sm:flex-row gap-4 pt-4 border-t no-print">
+                <!-- Home Button -->
+                <a href="index.html" id="home-button" class="w-full py-3 bg-main-purple text-white text-center font-bold rounded-lg hover:bg-purple-700 transition duration-300">
+                    Home
+                </a>
+                <!-- 다시 시작 버튼 -->
+                <button class="w-full py-3 bg-main-purple text-white font-bold rounded-lg hover:bg-purple-700 transition duration-300" onclick="startQuiz()">
+                    다시 시작
+                </button>
+                <!-- 인쇄 버튼 -->
+                <button class="w-full py-3 bg-gray-500 text-white font-bold rounded-lg hover:bg-gray-600 transition duration-300" onclick="printResults()">
+                    결과 인쇄
+                </button>
+            </div>
+
+            <!-- 틀린 문제 검토 영역 -->
+            <div id="incorrect-review-area" class="pt-8 border-t mt-8">
+                <h3 class="text-xl font-bold mb-4 border-l-4 border-wrong-red pl-3">틀린 문제 검토 (<span id="incorrect-count">0</span>개)</h3>
+                <div id="incorrect-list" class="space-y-6">
+                    <!-- Incorrect questions will be listed here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal (Message Box) -->
+    <div id="confirm-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-11/12 max-w-sm shadow-xl space-y-4">
+            <p class="text-lg font-semibold text-gray-800">퀴즈를 중단하고 홈으로 돌아가시겠습니까?</p>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeConfirmModal()" class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition duration-300">
+                    취소
+                </button>
+                <button onclick="goToHome()" class="px-4 py-2 bg-wrong-red text-white font-medium rounded-lg hover:bg-red-700 transition duration-300">
+                    중단하고 이동
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 8품사 퀴즈 데이터 10제
+        const quizData = [
+            {
+              "question": "1. 문장 'The **beautiful** flower bloomed quickly.'에서 밑줄 친 단어의 품사는 무엇인가요?",
+              "options": [
+                { "text": "명사", "rationale": "명사는 사람, 사물, 장소, 개념의 이름을 나타냅니다.", "isCorrect": false },
+                { "text": "동사", "rationale": "동사는 주어의 동작이나 상태를 나타냅니다.", "isCorrect": false },
+                { "text": "형용사", "rationale": "형용사는 명사('flower')를 수식하거나 보어 역할을 하며, 여기서는 명사를 수식합니다.", "isCorrect": true },
+                { "text": "부사", "rationale": "부사는 동사, 형용사, 다른 부사를 수식합니다.", "isCorrect": false }
+              ]
+            },
+            {
+              "question": "2. 문장 'The students **study** hard.'에서 밑줄 친 단어의 품사는 무엇인가요?",
+              "options": [
+                { "text": "명사", "rationale": "명사는 사람, 사물, 장소, 개념의 이름을 나타냅니다.", "isCorrect": false },
+                { "text": "동사", "rationale": "동사는 주어('The students')의 동작을 나타내는 서술어 역할을 합니다.", "isCorrect": true },
+                { "text": "형용사", "rationale": "형용사는 명사를 수식하거나 보어 역할을 합니다.", "isCorrect": false },
+                { "text": "부사", "rationale": "부사는 동사, 형용사, 다른 부사를 수식합니다.", "isCorrect": false }
+              ]
+            },
+            {
+              "question": "3. 문장 'He runs **very** fast.'에서 밑줄 친 단어의 품사는 무엇인가요?",
+              "options": [
+                { "text": "형용사", "rationale": "형용사는 명사를 수식하거나 보어 역할을 합니다.", "isCorrect": false },
+                { "text": "부사", "rationale": "부사('very')는 다른 부사('fast')를 수식하여 그 정도를 나타냅니다.", "isCorrect": true },
+                { "text": "명사", "rationale": "명사는 사람, 사물, 장소, 개념의 이름을 나타냅니다.", "isCorrect": false },
+                { "text": "전치사", "rationale": "전치사는 명사(구)와 함께 쓰여 시간, 장소 등을 나타냅니다.", "isCorrect": false }
+              ]
+            },
+            {
+              "question": "4. 문장 'I want some **water**.'에서 밑줄 친 단어의 품사는 무엇인가요?",
+              "options": [
+                { "text": "동사", "rationale": "동사는 주어의 동작이나 상태를 나타냅니다.", "isCorrect": false },
+                { "text": "형용사", "rationale": "형용사는 명사를 수식하거나 보어 역할을 합니다.", "isCorrect": false },
+                { "text": "명사", "rationale": "명사는 사람, 사물, 장소, 개념의 이름을 나타내며, 여기서는 동사 'want'의 목적어 역할을 합니다.", "isCorrect": true },
+                { "text": "대명사", "rationale": "대명사는 명사를 대신하는 단어입니다.", "isCorrect": false }
+              ]
+            },
+            {
+              "question": "5. 다음 중 **명사**가 아닌 단어는 무엇인가요?",
+              "options": [
+                { "text": "friend", "rationale": "사람을 나타내는 명사입니다.", "isCorrect": false },
+                { "text": "happiness", "rationale": "추상적인 개념을 나타내는 명사입니다.", "isCorrect": false },
+                { "text": "sleep", "rationale": "명사(잠) 또는 동사(자다)로 사용될 수 있지만, 동사 형태가 더 흔합니다.", "isCorrect": true },
+                { "text": "city", "rationale": "장소를 나타내는 명사입니다.", "isCorrect": false }
+              ]
+            },
+            {
+              "question": "6. 문장 'He is **a** student.'에서 밑줄 친 단어의 품사는 무엇인가요?",
+              "options": [
+                { "text": "형용사", "rationale": "명사를 수식하는 역할을 하지만, 품사 분류상 관사(한정사)에 속합니다.", "isCorrect": false },
+                { "text": "관사", "rationale": "명사('student') 앞에 쓰여 명사의 범위를 한정하는 역할을 하는 관사입니다.", "isCorrect": true },
+                { "text": "부사", "rationale": "부사는 동사, 형용사, 다른 부사를 수식합니다.", "isCorrect": false },
+                { "text": "전치사", "rationale": "전치사는 명사(구)와 함께 쓰여 시간, 장소 등을 나타냅니다.", "isCorrect": false }
+              ]
+            },
+            {
+              "question": "7. 문장 'She **drives** a red car.'에서 밑줄 친 단어의 품사는 무엇인가요?",
+              "options": [
+                { "text": "명사", "rationale": "명사는 사람, 사물, 장소, 개념의 이름을 나타냅니다.", "isCorrect": false },
+                { "text": "형용사", "rationale": "형용사는 명사를 수식하거나 보어 역할을 합니다.", "isCorrect": false },
+                { "text": "동사", "rationale": "동사는 주어('She')의 동작을 나타내는 서술어 역할을 합니다.", "isCorrect": true },
+                { "text": "부사", "rationale": "부사는 동사, 형용사, 다른 부사를 수식합니다.", "isCorrect": false }
+              ]
+            },
+            {
+              "question": "8. 다음 중 **동사**가 아닌 단어는 무엇인가요?",
+              "options": [
+                { "text": "run", "rationale": "동작을 나타내는 동사입니다.", "isCorrect": false },
+                { "text": "quickly", "rationale": "동사를 수식하는 부사입니다.", "isCorrect": true },
+                { "text": "write", "rationale": "동작을 나타내는 동사입니다.", "isCorrect": false },
+                { "text": "think", "rationale": "상태나 동작을 나타내는 동사입니다.", "isCorrect": false }
+              ]
+            },
+            {
+              "question": "9. 문장 'The room is **clean**.'에서 밑줄 친 단어의 품사는 무엇인가요?",
+              "options": [
+                { "text": "명사", "rationale": "명사는 사람, 사물, 장소, 개념의 이름을 나타냅니다.", "isCorrect": false },
+                { "text": "동사", "rationale": "동사는 주어의 동작이나 상태를 나타냅니다.", "isCorrect": false },
+                { "text": "형용사", "rationale": "형용사는 보어('clean') 역할을 하여 주어('The room')의 상태를 설명합니다.", "isCorrect": true },
+                { "text": "부사", "rationale": "부사는 주어의 상태를 설명하는 보어 자리에 올 수 없습니다.", "isCorrect": false }
+              ]
+            },
+            {
+              "question": "10. 문장 'I will go **to** the park.'에서 밑줄 친 단어의 품사는 무엇인가요?",
+              "options": [
+                { "text": "동사", "rationale": "동사는 'go'입니다.", "isCorrect": false },
+                { "text": "부사", "rationale": "부사는 동사, 형용사, 다른 부사를 수식합니다.", "isCorrect": false },
+                { "text": "전치사", "rationale": "전치사는 명사(구)('the park')와 함께 쓰여 장소나 방향을 나타냅니다.", "isCorrect": true },
+                { "text": "접속사", "rationale": "접속사는 단어, 구, 절을 연결합니다.", "isCorrect": false }
+              ]
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let answered = false;
+        let quizResults = []; 
+
+        // DOM 요소 가져오기
+        const quizTitleElement = document.getElementById('quiz-title');
+        const counterElement = document.getElementById('counter');
+        const questionNumberDisplay = document.getElementById('question-number-display');
+        const optionsContainer = document.getElementById('options-container');
+        const feedbackArea = document.getElementById('feedback-area');
+        const rationaleTextElement = document.getElementById('rationale-text');
+        const nextButton = document.getElementById('next-button');
+        const questionArea = document.getElementById('question-area');
+        const resultsArea = document.getElementById('results-area');
+        const finalScoreElement = document.getElementById('final-score');
+        const resultMessageElement = document.getElementById('result-message');
+        const questionTextElement = document.getElementById('question-text');
+        const incorrectListElement = document.getElementById('incorrect-list');
+        const incorrectCountElement = document.getElementById('incorrect-count');
+
+
+        // Modal control functions
+        function showConfirmModal() {
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+        }
+        
+        function goToHome() {
+            window.location.href = "index.html";
+            closeConfirmModal();
+        }
+        
+        // 인쇄 기능
+        function printResults() {
+            window.print();
+        }
+
+        // 퀴즈 시작 (초기화)
+        function startQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            answered = false;
+            quizResults = [];
+
+            // UI 표시 전환
+            questionArea.classList.remove('hidden');
+            resultsArea.classList.add('hidden');
+            feedbackArea.classList.add('hidden');
+            nextButton.classList.add('hidden');
+
+            quizTitleElement.textContent = "8품사 맛보기";
+
+            renderQuestion(currentQuestionIndex);
+        }
+
+        // 현재 질문을 렌더링
+        function renderQuestion(index) {
+            const question = quizData[index];
+            answered = false; 
+
+            // 카운터 및 질문 번호 업데이트
+            const qNum = index + 1;
+            counterElement.textContent = `문제 ${qNum} / ${quizData.length}`;
+            questionNumberDisplay.textContent = `${qNum}번`;
+
+            // 질문 텍스트 업데이트
+            questionTextElement.innerHTML = question.question;
+
+            // 옵션 버튼 렌더링 (ul > li > button 구조 사용)
+            optionsContainer.innerHTML = '';
+            question.options.forEach((option, i) => {
+                const li = document.createElement('li');
+                const button = document.createElement('button');
+                
+                button.textContent = option.text;
+                button.className = 'option-button';
+                button.onclick = () => checkAnswer(i);
+                
+                li.appendChild(button);
+                optionsContainer.appendChild(li);
+            });
+
+            // 피드백 및 다음 버튼 숨김
+            feedbackArea.classList.add('hidden');
+            feedbackArea.classList.remove('feedback-correct', 'feedback-wrong');
+            nextButton.classList.add('hidden');
+        }
+
+        // 답변 확인 로직
+        function checkAnswer(selectedIndex) {
+            if (answered) return;
+            answered = true;
+
+            const question = quizData[currentQuestionIndex];
+            const optionsListItems = optionsContainer.children;
+            const isCorrect = question.options[selectedIndex].isCorrect;
+            
+            let correctOptionText = '';
+            let selectedRationale = question.options[selectedIndex].rationale;
+
+            // 모든 옵션 버튼 비활성화 및 색상 표시
+            Array.from(optionsListItems).forEach((li, i) => {
+                const button = li.querySelector('.option-button');
+                if (!button) return;
+
+                button.disabled = true;
+                button.classList.remove('hover:bg-gray-50');
+
+                if (question.options[i].isCorrect) {
+                    correctOptionText = question.options[i].text;
+                    // 정답 표시: 초록색
+                    button.classList.add('bg-correct-green', 'text-white', 'font-bold');
+                } else if (i === selectedIndex && !isCorrect) {
+                    // 오답 표시: 빨간색
+                    button.classList.add('bg-wrong-red', 'text-white', 'font-bold');
+                }
+            });
+
+            // 결과 저장
+            quizResults.push({
+                questionNum: currentQuestionIndex + 1,
+                question: question.question,
+                isCorrect: isCorrect,
+                selectedAnswer: question.options[selectedIndex].text,
+                correctAnswer: correctOptionText,
+                rationale: question.options[selectedIndex].rationale,
+            });
+
+            // 점수 업데이트 및 피드백 표시
+            if (isCorrect) {
+                score++;
+                feedbackArea.classList.add('feedback-correct');
+                rationaleTextElement.innerHTML = `<strong>설명:</strong> ${selectedRationale} (<span class="correct-answer-highlight">정답: ${correctOptionText}</span>)`;
+            } else {
+                feedbackArea.classList.add('feedback-wrong');
+                rationaleTextElement.innerHTML = `<strong>설명:</strong> ${selectedRationale} (<span class="correct-answer-highlight">정답: ${correctOptionText}</span>)`;
+            }
+
+            feedbackArea.classList.remove('hidden');
+            nextButton.classList.remove('hidden');
+        }
+
+        // 다음 문제로 이동
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                renderQuestion(currentQuestionIndex);
+            } else {
+                showResults();
+            }
+        }
+
+        // 틀린 문제 목록을 렌더링
+        function renderIncorrectAnswers() {
+            const incorrect = quizResults.filter(r => !r.isCorrect);
+            incorrectCountElement.textContent = incorrect.length;
+            incorrectListElement.innerHTML = '';
+
+            if (incorrect.length === 0) {
+                incorrectListElement.innerHTML = '<p class="text-gray-600 text-center py-4">🎉 틀린 문제가 없습니다. 완벽해요!</p>';
+                return;
+            }
+
+            incorrect.forEach(result => {
+                const item = document.createElement('div');
+                item.className = 'review-item p-4 border border-red-200 rounded-lg bg-red-50 space-y-2';
+
+                item.innerHTML = `
+                    <p class="font-bold text-base text-red-700">틀린 문제 ${result.questionNum}번: ${result.question}</p>
+                    <p class="text-sm text-gray-700 ml-2">선택한 답: <span class="font-medium text-wrong-red">${result.selectedAnswer}</span></p>
+                    <div class="p-2 bg-white rounded-md border border-gray-300">
+                        <p class="text-sm font-medium text-correct-green">정답: ${result.correctAnswer}</p>
+                        <p class="text-xs text-gray-600">해설: ${result.rationale}</p>
+                    </div>
+                `;
+                incorrectListElement.appendChild(item);
+            });
+        }
+
+        // 결과 표시
+        function showResults() {
+            questionArea.classList.add('hidden');
+            resultsArea.classList.remove('hidden');
+
+            finalScoreElement.textContent = `${score} / ${quizData.length}`;
+
+            let message = '';
+            if (score === quizData.length) {
+                message = '🎉 만점입니다! 8품사의 기본 역할을 완벽하게 이해하고 있어요! 🏆';
+            } else if (score >= quizData.length * 0.7) {
+                message = '👍 정말 잘했어요! 문장 속 단어의 기능을 잘 파악하고 있네요.';
+            } else {
+                message = '🤔 수고하셨습니다. 명사, 동사, 형용사, 부사의 핵심 역할을 다시 한번 복습해 보는 것이 좋겠어요.';
+            }
+            resultMessageElement.textContent = message;
+
+            // 틀린 문제 검토 영역 렌더링
+            renderIncorrectAnswers();
+        }
+
+        // 페이지 로드 시 퀴즈 시작
+        window.onload = startQuiz;
+
+    </script>
+</body>
+</html>
